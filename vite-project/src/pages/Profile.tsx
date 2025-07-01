@@ -12,7 +12,7 @@ const skillsList = ['First Aid', 'Teaching', 'Cooking', 'Driving', 'Organizing']
 
 type Availability = {
   date: string;
-  time: string;
+  time: string; 
 };
 
 const Profile: React.FC = () => {
@@ -104,114 +104,50 @@ const Profile: React.FC = () => {
     alert('Profile saved successfully!');
   };
 
-  const formatTime = (timeStr: string) => {
-    const [hour, minute] = timeStr.split(':');
-    const hourNum = parseInt(hour, 10);
-    const ampm = hourNum >= 12 ? 'PM' : 'AM';
-    const formattedHour = hourNum % 12 === 0 ? 12 : hourNum % 12;
-    return `${formattedHour}:${minute} ${ampm}`;
-  };
-
   return (
     <div>
       <h2>User Profile</h2>
       <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          name="email"
-          placeholder="Email (used as login)"
-          maxLength={100}
-          value={form.email}
-          readOnly
-          required
-          onChange={handleChange}
-        /><br />
+        <input type="email" name="email" placeholder="Email (used as login)" maxLength={100}
+          value={form.email} readOnly required onChange={handleChange} /><br />
 
-        <input
-          name="fullName"
-          placeholder="Full Name"
-          maxLength={50}
-          value={form.fullName}
-          required
-          onChange={handleChange}
-        /><br />
+        <input name="fullName" placeholder="Full Name" maxLength={50}
+          value={form.fullName} required onChange={handleChange} /><br />
 
-        <input
-          name="address1"
-          placeholder="Address 1"
-          maxLength={100}
-          value={form.address1}
-          required
-          onChange={handleChange}
-        /><br />
+        <input name="address1" placeholder="Address 1" maxLength={100}
+          value={form.address1} required onChange={handleChange} /><br />
 
-        <input
-          name="address2"
-          placeholder="Address 2 (Optional)"
-          maxLength={100}
-          value={form.address2}
-          onChange={handleChange}
-        /><br />
+        <input name="address2" placeholder="Address 2 (Optional)" maxLength={100}
+          value={form.address2} onChange={handleChange} /><br />
 
-        <input
-          name="city"
-          placeholder="City"
-          maxLength={100}
-          value={form.city}
-          required
-          onChange={handleChange}
-        /><br />
+        <input name="city" placeholder="City" maxLength={100}
+          value={form.city} required onChange={handleChange} /><br />
 
         <select name="state" value={form.state} onChange={handleChange} required>
           <option value="">Select State</option>
-          {states.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
+          {states.map((s) => <option key={s} value={s}>{s}</option>)}
         </select><br />
 
-        <input
-          name="zip"
-          placeholder="Zip Code"
-          maxLength={9}
-          minLength={5}
-          value={form.zip}
-          required
-          onChange={handleChange}
-        /><br />
+        <input name="zip" placeholder="Zip Code" maxLength={9} minLength={5}
+          value={form.zip} required onChange={handleChange} /><br />
 
         <label>Skills (Select multiple with Ctrl/Cmd):</label><br />
         <select name="skills" multiple value={form.skills} onChange={handleSkillChange} required>
-          {skillsList.map((skill) => (
-            <option key={skill} value={skill}>{skill}</option>
-          ))}
+          {skillsList.map((skill) => <option key={skill} value={skill}>{skill}</option>)}
         </select><br />
 
-        <textarea
-          name="preferences"
-          placeholder="Preferences (Optional)"
-          value={form.preferences}
-          onChange={handleChange}
-        /><br />
+        <textarea name="preferences" placeholder="Preferences (Optional)"
+          value={form.preferences} onChange={handleChange} /><br />
 
         <label>Availability:</label><br />
-        <input
-          type="date"
-          name="newDate"
-          value={form.newDate}
-          onChange={handleChange}
-        />
-        <input
-          type="time"
-          name="newTime"
-          value={form.newTime}
-          onChange={handleChange}
-        />
+        <input type="date" name="newDate" value={form.newDate} onChange={handleChange} />
+        <input type="time" name="newTime" value={form.newTime} onChange={handleChange} />
         <button type="button" onClick={addAvailability}>+ Add</button>
 
         <ul>
           {form.availability.map((a, idx) => (
             <li key={idx}>
-              {a.date} at {formatTime(a.time)}{' '}
+              {a.date} at {a.time}{' '}
               <button type="button" onClick={() => removeAvailability(a.date, a.time)}>Remove</button>
             </li>
           ))}

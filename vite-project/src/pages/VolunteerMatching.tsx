@@ -7,85 +7,74 @@ type Event = {
   requiredSkills: string[];
   urgency: string;
   eventDate: string;
+  eventTime: string;
 };
 
-type Participation = {
-  eventName: string;
-  status: string;
+type Volunteer = {
+  fullName: string;
+  skills: string[];
+  availability: { date: string; time: string }[];
 };
 
-type HistoryItem = Event & { status: string };
+type Match = {
+  volunteerName: string;
+  matchedEvent: string;
+};
 
-const VolunteerHistory: React.FC = () => {
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const currentUserEmail = localStorage.getItem('currentUser');
-  const participationKey = currentUserEmail ? `participation_${currentUserEmail}` : null;
+const VolunteerMatching: React.FC = () => {
+  const [matches, setMatches] = useState<Match[]>([]);
 
   useEffect(() => {
-    if (!participationKey) {
-      setHistory([]);
-      return;
-    }
+    const currentUserEmail = localStorage.getItem('currentUser');
+    const profileData = currentUserEmail ? localStorage.getItem(`profile_${currentUserEmail}`) : null;
+    const eventData = localStorage.getItem('events');
 
-    const participationData = localStorage.getItem(participationKey);
-    const eventsData = localStorage.getItem('events');
+    if (!profileData || !eventData) return;
 
-    if (!participationData || !eventsData) {
-      setHistory([]);
-      return;
-    }
+    const volunteer: Volunteer = JSON.parse(profileData);
+    const events: Event[] = JSON.parse(eventData);
 
-    const participation: Participation[] = JSON.parse(participationData);
-    const events: Event[] = JSON.parse(eventsData);
+    const matchedEvents = events.filter(event => {
+      const skillMatch = event.requiredSkills.some(skill => volunteer.skills.includes(skill));
+      const timeMatch = volunteer.availability.some(avail =>
+        avail.date === event.eventDate && avail.time === event.eventTime
+      );
+      return skillMatch && timeMatch;
+    });
 
-    const combinedHistory: HistoryItem[] = participation.map((p) => {
-      const eventInfo = events.find(e => e.eventName === p.eventName);
-      return eventInfo ? { ...eventInfo, status: p.status } : null;
-    }).filter(Boolean) as HistoryItem[];
+    const formattedMatches = matchedEvents.map(event => ({
+      volunteerName: volunteer.fullName,
+      matchedEvent: `${event.eventName} – ${event.eventDate} at ${event.eventTime}`,
+    }));
 
-    setHistory(combinedHistory);
-  }, [participationKey]);
+    setMatches(formattedMatches);
+  }, []);
 
   return (
     <div>
-      <h2>Volunteer History</h2>
-      {history.length === 0 ? (
-        <p>No participation history yet.</p>
+      <h2>Volunteer Matching</h2>
+      {matches.length === 0 ? (
+        <p>No matching events found. Make sure your profile includes skills and availability that match existing events.</p>
       ) : (
-        history.map((item, idx) => (
-          <div key={idx} style={{
-            border: '1px solid #ccc',
-            borderRadius: '8px',
-            padding: '15px',
-            marginBottom: '15px',
-            maxWidth: '600px',
-            backgroundColor: '#fafafa'
-          }}>
-            <h3 style={{ marginBottom: '10px' }}>{item.eventName}</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', rowGap: '8px', columnGap: '10px' }}>
-              <strong>Description:</strong>
-              <span>{item.description || 'N/A'}</span>
-
-              <strong>Location:</strong>
-              <span>{item.location || 'N/A'}</span>
-
-              <strong>Required Skills:</strong>
-              <span>{item.requiredSkills.length > 0 ? item.requiredSkills.join(', ') : 'N/A'}</span>
-
-              <strong>Urgency:</strong>
-              <span>{item.urgency || 'N/A'}</span>
-
-              <strong>Event Date:</strong>
-              <span>{item.eventDate || 'N/A'}</span>
-
-              <strong>Status:</strong>
-              <span>{item.status}</span>
-            </div>
-          </div>
-        ))
+        <table>
+          <thead>
+            <tr>
+              <th>Volunteer Name</th>
+              <th>Matched Event</th>
+            </tr>
+          </thead>
+          <tbody>
+            {matches.map((m, idx) => (
+              <tr key={idx}>
+                <td>{m.volunteerName}</td>
+                <td>{m.matchedEvent}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );
 };
 
-export default VolunteerHistory;
+export default VolunteerMatching;
