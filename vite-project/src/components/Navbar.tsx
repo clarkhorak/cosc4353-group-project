@@ -8,9 +8,9 @@ const Navbar: React.FC = () => {
         <Link to="/register">Register</Link>
         <Link to="/">Login</Link>
         <Link to="/profile">Profile</Link>
-        <Link to="/match">Match</Link>
+        <Link to="/match">Volunteer Matching</Link>
         <Link to="/available-events">Available Events</Link>
-        <Link to="/history">History</Link>
+        <Link to="/history"> Volunteer History</Link>
         <Link to="/notifications">Notifications</Link>
         <Link to="/logout">Logout</Link>
       </div>
