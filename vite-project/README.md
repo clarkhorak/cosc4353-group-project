@@ -35,6 +35,7 @@ To run the project locally:
 ```bash
 npm install       # Install dependencies
 npm run dev       # Start development server
+```
 
 
 ## Coding Languages Used
