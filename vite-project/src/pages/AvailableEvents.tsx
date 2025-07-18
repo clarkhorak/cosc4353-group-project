@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 type Event = {
@@ -26,12 +26,14 @@ const AvailableEvents: React.FC = () => {
   const navigate = useNavigate();
   const currentUserEmail = localStorage.getItem('currentUser');
   const participationKey = currentUserEmail ? `participation_${currentUserEmail}` : null;
+  const hasShownAlert = useRef(false);
 
   const [events, setEvents] = useState<Event[]>([]);
   const [joinedEvents, setJoinedEvents] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!currentUserEmail) {
+    if (!currentUserEmail && !hasShownAlert.current) {
+      hasShownAlert.current = true;
       alert('Please login to view and join events.');
       navigate('/');
       return;
