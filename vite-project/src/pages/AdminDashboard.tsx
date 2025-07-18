@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../services/api';
 
 type Event = {
-  eventName: string;
+  id?: number;
+  title: string;
   description: string;
   location: string;
-  requiredSkills: string[];
-  urgency: string;
-  eventDate: string;
-  eventTime: string;
+  requirements: string;
+  category: string;
+  event_date: string;
+  start_time: string;
+  end_time: string;
+  capacity: number;
+  status: string;
 };
 
 const skillsList = ['First Aid', 'Teaching', 'Cooking', 'Driving', 'Organizing'];
@@ -16,30 +21,46 @@ const ADMIN_PASSWORD = 'admin123';
 
 const AdminDashboard: React.FC = () => {
   const [authenticated, setAuthenticated] = useState(false);
-  const [form, setForm] = useState<Event>({
-    eventName: '',
+  const [form, setForm] = useState({
+    title: '',
     description: '',
     location: '',
-    requiredSkills: [],
-    urgency: '',
-    eventDate: '',
-    eventTime: '',
+    requirements: '',
+    category: '',
+    event_date: '',
+    start_time: '',
+    end_time: '',
+    capacity: 1,
+    status: 'open',
   });
-
-  const [events, setEvents] = useState<Event[]>(() => {
-    const saved = localStorage.getItem('events');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const password = prompt('Enter admin password:');
     if (password === ADMIN_PASSWORD) {
       setAuthenticated(true);
+      fetchEvents();
     } else {
       alert('Access denied.');
       window.location.href = '/';
     }
+    // eslint-disable-next-line
   }, []);
+
+  const fetchEvents = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await apiService.getEvents();
+      setEvents(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load events');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!authenticated) return null;
 
@@ -48,38 +69,34 @@ const AdminDashboard: React.FC = () => {
     setForm({ ...form, [name]: value });
   };
 
-  const handleSkillsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selected = Array.from(e.target.selectedOptions, opt => opt.value);
-    setForm({ ...form, requiredSkills: selected });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (
-      !form.eventName || !form.description || !form.location ||
-      form.requiredSkills.length === 0 || !form.urgency ||
-      !form.eventDate || !form.eventTime
+      !form.title || !form.description || !form.location ||
+      !form.category || !form.event_date || !form.start_time || !form.end_time || !form.capacity
     ) {
       alert('Please fill in all required fields.');
       return;
     }
-
-    const newEvent = { ...form };
-    const updatedEvents = [...events, newEvent];
-    setEvents(updatedEvents);
-    localStorage.setItem('events', JSON.stringify(updatedEvents));
-    alert('Event created successfully!');
-
-    setForm({
-      eventName: '',
-      description: '',
-      location: '',
-      requiredSkills: [],
-      urgency: '',
-      eventDate: '',
-      eventTime: '',
-    });
+    try {
+      await apiService.createEvent(form);
+      alert('Event created successfully!');
+      setForm({
+        title: '',
+        description: '',
+        location: '',
+        requirements: '',
+        category: '',
+        event_date: '',
+        start_time: '',
+        end_time: '',
+        capacity: 1,
+        status: 'open',
+      });
+      fetchEvents();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to create event');
+    }
   };
 
   const formatTime = (timeStr?: string) => {
@@ -94,40 +111,39 @@ const AdminDashboard: React.FC = () => {
   return (
     <div>
       <h2>Admin Dashboard - Create Event</h2>
-
       <form onSubmit={handleSubmit}>
-        <input type="text" name="eventName" placeholder="Event Name" value={form.eventName} onChange={handleChange} required /><br />
+        <input type="text" name="title" placeholder="Event Title" value={form.title} onChange={handleChange} required /><br />
         <textarea name="description" placeholder="Event Description" value={form.description} onChange={handleChange} required /><br />
         <textarea name="location" placeholder="Event Location" value={form.location} onChange={handleChange} required /><br />
-
-        <label>Required Skills:</label><br />
-        <select name="requiredSkills" multiple value={form.requiredSkills} onChange={handleSkillsChange} required>
-          {skillsList.map(skill => <option key={skill} value={skill}>{skill}</option>)}
+        <input type="text" name="category" placeholder="Category" value={form.category} onChange={handleChange} required /><br />
+        <input type="text" name="requirements" placeholder="Requirements (comma separated)" value={form.requirements} onChange={handleChange} /><br />
+        <input type="number" name="capacity" placeholder="Capacity" value={form.capacity} min={1} onChange={handleChange} required /><br />
+        <label>Status:</label><br />
+        <select name="status" value={form.status} onChange={handleChange} required>
+          <option value="open">Open</option>
+          <option value="closed">Closed</option>
+          <option value="cancelled">Cancelled</option>
         </select><br />
-
-        <label>Urgency:</label><br />
-        <select name="urgency" value={form.urgency} onChange={handleChange} required>
-          <option value="">Select Urgency</option>
-          {urgencies.map(u => <option key={u} value={u}>{u}</option>)}
-        </select><br />
-
         <label>Event Date:</label><br />
-        <input type="date" name="eventDate" value={form.eventDate} onChange={handleChange} required /><br />
-
-        <label>Event Time:</label><br />
-        <input type="time" name="eventTime" value={form.eventTime} onChange={handleChange} required /><br />
-
+        <input type="date" name="event_date" value={form.event_date} onChange={handleChange} required /><br />
+        <label>Start Time:</label><br />
+        <input type="time" name="start_time" value={form.start_time} onChange={handleChange} required /><br />
+        <label>End Time:</label><br />
+        <input type="time" name="end_time" value={form.end_time} onChange={handleChange} required /><br />
         <button type="submit">Create Event</button>
       </form>
-
       <h3>Created Events</h3>
-      {events.length === 0 ? (
+      {loading ? (
+        <p>Loading...</p>
+      ) : error ? (
+        <p style={{ color: 'red' }}>{error}</p>
+      ) : events.length === 0 ? (
         <p>No events created yet.</p>
       ) : (
         <ul>
           {events.map((e, idx) => (
-            <li key={idx}>
-              <strong>{e.eventName}</strong> — {e.eventDate} at {formatTime(e.eventTime)} ({e.urgency})
+            <li key={e.id || idx}>
+              <strong>{e.title}</strong> — {e.event_date} {e.start_time && `at ${formatTime(e.start_time)}`} ({e.status})
             </li>
           ))}
         </ul>

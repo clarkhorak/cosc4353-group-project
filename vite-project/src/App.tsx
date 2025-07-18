@@ -4,6 +4,7 @@ import './index.css';
 import './App.css';
 
 import { Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 
 import Navbar from './components/Navbar'; 
 import AdminLink from './components/AdminLink'; 
@@ -20,7 +21,7 @@ import Logout from './pages/Logout';
 
 const App: React.FC = () => {
   return (
-    <>
+    <AuthProvider>
       <Navbar />
       <Routes>
         <Route path="/" element={<Login />} />
@@ -33,7 +34,7 @@ const App: React.FC = () => {
         <Route path="/available-events" element={<AvailableEvents />} />
         <Route path="/logout" element={<Logout />} />
       </Routes>
-    </>
+    </AuthProvider>
   );
 };
 

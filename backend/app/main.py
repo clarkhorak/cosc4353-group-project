@@ -3,6 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
 
+# Import API routes
+from app.api.auth import router as auth_router
+from app.api.profile import router as profile_router
+from app.api.event import router as event_router
+from app.api.matching import router as matching_router
+from app.api.notification import router as notification_router
+from app.api.history import router as history_router
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,6 +32,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include API routes
+app.include_router(auth_router)
+app.include_router(profile_router)
+app.include_router(event_router)
+app.include_router(matching_router)
+app.include_router(notification_router)
+app.include_router(history_router)
 
 @app.get("/")
 async def root():
