@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from datetime import datetime
 import re
@@ -8,7 +8,8 @@ class UserBase(BaseModel):
     email: EmailStr
     full_name: str
     
-    @validator('full_name')
+    @field_validator('full_name')
+    @classmethod
     def validate_full_name(cls, v):
         if len(v.strip()) < 2:
             raise ValueError('Full name must be at least 2 characters')
@@ -22,7 +23,8 @@ class UserCreate(UserBase):
     """User registration model"""
     password: str
     
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError('Password must be at least 8 characters')
@@ -45,8 +47,9 @@ class User(UserBase):
     created_at: datetime
     is_active: bool = True
     
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 class UserResponse(BaseModel):
     """User response model (without sensitive data)"""
@@ -56,5 +59,6 @@ class UserResponse(BaseModel):
     created_at: datetime
     is_active: bool
     
-    class Config:
-        from_attributes = True 
+    model_config = {
+        "from_attributes": True
+    } 
