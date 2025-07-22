@@ -1,128 +1,170 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-type Event = {
-  eventName: string;
-  description: string;
-  location: string;
-  requiredSkills: string[];
-  urgency: string;
-  eventDate: string;   
-  eventTime: string;   
-};
-
-type Participation = {
-  eventName: string;
-  description: string;
-  location: string;
-  requiredSkills: string[];
-  urgency: string;
-  eventDate: string;
-  eventTime: string;
-  status: string;
-};
+import { useAuth } from '../contexts/AuthContext';
+import apiService from '../services/api';
+import type { Event } from '../services/api';
 
 const AvailableEvents: React.FC = () => {
   const navigate = useNavigate();
-  const currentUserEmail = localStorage.getItem('currentUser');
-  const participationKey = currentUserEmail ? `participation_${currentUserEmail}` : null;
+  const { user } = useAuth();
+  const hasShownAlert = useRef(false);
 
   const [events, setEvents] = useState<Event[]>([]);
-  const [joinedEvents, setJoinedEvents] = useState<string[]>([]);
+  const [joinedEventIds, setJoinedEventIds] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!currentUserEmail) {
-      alert('Please login to view and join events.');
-      navigate('/');
-      return;
-    }
-
-    const savedEvents = localStorage.getItem('events');
-    if (savedEvents) setEvents(JSON.parse(savedEvents));
-
-    if (participationKey) {
-      const savedParticipation = localStorage.getItem(participationKey);
-      if (savedParticipation) {
-        const participation: Participation[] = JSON.parse(savedParticipation);
-        const joined = participation.map(p => p.eventName);
-        setJoinedEvents(joined);
-      } else {
-        setJoinedEvents([]);
+    const fetchData = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        if (!user && !hasShownAlert.current) {
+          hasShownAlert.current = true;
+          alert('Please login to view and join events.');
+          navigate('/');
+          return;
+        }
+        // Fetch events from backend
+        const data = await apiService.getEvents();
+        setEvents(data);
+        // Fetch joined events from backend
+        const history = await apiService.getHistory();
+        setJoinedEventIds(history.map((h: any) => h.event_id));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load events');
+      } finally {
+        setLoading(false);
       }
-    }
-  }, [currentUserEmail, participationKey, navigate]);
+    };
+    fetchData();
+  }, [navigate, user]);
 
-  const updateLocalStorage = (updatedParticipation: Participation[]) => {
-    if (!participationKey) return;
-    localStorage.setItem(participationKey, JSON.stringify(updatedParticipation));
-  };
-
-  const handleJoin = (event: Event) => {
-    if (!participationKey) {
+  const handleJoin = async (event: Event) => {
+    if (!user) {
       alert('You must be logged in to join events.');
       return;
     }
-
-    const participation: Participation[] = JSON.parse(localStorage.getItem(participationKey) || '[]');
-
-    if (participation.find(p => p.eventName === event.eventName)) {
-      alert('You already joined this event.');
-      return;
+    try {
+      await apiService.participateInEvent(event.id);
+      setJoinedEventIds(prev => [...prev, event.id]);
+      alert(`You joined ${event.title}`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to join event');
     }
-
-    const newEntry: Participation = {
-      eventName: event.eventName,
-      description: event.description,
-      location: event.location,
-      requiredSkills: event.requiredSkills,
-      urgency: event.urgency,
-      eventDate: event.eventDate,
-      eventTime: event.eventTime,
-      status: 'Pending',
-    };
-
-    const updated = [...participation, newEntry];
-    updateLocalStorage(updated);
-    setJoinedEvents(prev => [...prev, event.eventName]);
-    alert(`You joined ${event.eventName}`);
   };
 
-  const handleUnjoin = (event: Event) => {
-    if (!participationKey) {
-      alert('You must be logged in to unjoin events.');
-      return;
-    }
-
-    const participation: Participation[] = JSON.parse(localStorage.getItem(participationKey) || '[]');
-    const updated = participation.filter(p => p.eventName !== event.eventName);
-
-    updateLocalStorage(updated);
-    setJoinedEvents(prev => prev.filter(name => name !== event.eventName));
-    alert(`You unjoined ${event.eventName}`);
+  const formatTime = (timeStr?: string) => {
+    if (!timeStr || !timeStr.includes(':')) return 'Time not set';
+    const [hour, minute] = timeStr.split(':');
+    const hourNum = parseInt(hour, 10);
+    const ampm = hourNum >= 12 ? 'PM' : 'AM';
+    const formattedHour = hourNum % 12 === 0 ? 12 : hourNum % 12;
+    return `${formattedHour}:${minute} ${ampm}`;
   };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Please login to view events</h2>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <h2>Available Events</h2>
-      {events.length === 0 ? (
-        <p>No events available right now.</p>
-      ) : (
-        events.map((e, idx) => (
-          <div key={idx} style={{ border: '1px solid gray', padding: '10px', marginBottom: '10px' }}>
-            <h3>{e.eventName}</h3>
-            <p>{e.description}</p>
-            <p><strong>Date:</strong> {e.eventDate} at {e.eventTime}</p>
-            <p><strong>Location:</strong> {e.location}</p>
-            <p><strong>Urgency:</strong> {e.urgency}</p>
-            <p><strong>Skills Needed:</strong> {e.requiredSkills.join(', ')}</p>
-            {joinedEvents.includes(e.eventName) ? (
-              <button onClick={() => handleUnjoin(e)}>Unjoin</button>
-            ) : (
-              <button onClick={() => handleJoin(e)}>Join</button>
-            )}
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-900">Available Events</h2>
+          <p className="mt-2 text-gray-600">Browse and join volunteer opportunities in your area</p>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
           </div>
-        ))
-      )}
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+            <p className="text-red-800">{error}</p>
+          </div>
+        ) : events.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-gray-400 text-6xl mb-4">📅</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No events available</h3>
+            <p className="text-gray-600">Check back later for new volunteer opportunities!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {events.map((event) => (
+              <div key={event.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold text-gray-900">{event.title}</h3>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      event.status === 'open' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {event.status}
+                    </span>
+                  </div>
+                  
+                  <p className="text-gray-600 mb-4 line-clamp-3">{event.description}</p>
+                  
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center text-sm text-gray-500">
+                      <span className="font-medium w-20">Date:</span>
+                      <span>{formatDate(event.event_date)}</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <span className="font-medium w-20">Time:</span>
+                      <span>{formatTime(event.start_time)} - {formatTime(event.end_time)}</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <span className="font-medium w-20">Location:</span>
+                      <span>{event.location}</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <span className="font-medium w-20">Category:</span>
+                      <span className="capitalize">{event.category}</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <span className="font-medium w-20">Capacity:</span>
+                      <span>{event.capacity} volunteers</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    {joinedEventIds.includes(event.id) ? (
+                      <span className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-700 bg-green-100 rounded-md">
+                        ✓ Joined
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleJoin(event)}
+                        disabled={event.status !== 'open'}
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Join Event
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

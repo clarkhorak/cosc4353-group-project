@@ -1,15 +1,24 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import apiService from '../services/api';
 
 const Logout: React.FC = () => {
   const navigate = useNavigate();
 
   React.useEffect(() => {
-    // Remove currentUser from localStorage
-    localStorage.removeItem('currentUser');
-    alert('You have been logged out.');
-    // Redirect to login page
-    navigate('/');
+    const performLogout = async () => {
+      try {
+        await apiService.logout();
+      } catch (err) {
+        console.error('Logout error:', err);
+      } finally {
+        apiService.clearAuth();
+        alert('You have been logged out.');
+        navigate('/');
+      }
+    };
+
+    performLogout();
   }, [navigate]);
 
   return <div>Logging out...</div>;
