@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from app.models.user import UserCreate, UserLogin, User
+from app.repositories.user_repository import UserRepository
 from app.config import settings
 import logging
 
@@ -13,10 +14,7 @@ class AuthService:
     
     def __init__(self):
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-        
-        # In-memory storage (replace with database later)
-        self.users: Dict[str, Dict[str, Any]] = {}
-        self.user_counter = 0
+        self.user_repository = UserRepository()
         
         # JWT configuration
         self.secret_key = settings.secret_key
@@ -54,39 +52,47 @@ class AuthService:
     def register_user(self, user_data: UserCreate) -> User:
         """Register a new user"""
         # Check if user already exists
-        if user_data.email in self.users:
+        existing_user = self.user_repository.get_by_email(user_data.email)
+        if existing_user:
             raise ValueError("User with this email already exists")
         
-        # Create user
-        self.user_counter += 1
-        user_id = str(self.user_counter)
+        # Hash password
         hashed_password = self.hash_password(user_data.password)
         
-        user = User(
-            id=user_id,
+        # Create user in database
+        db_user = self.user_repository.create(
             email=user_data.email,
             full_name=user_data.full_name,
-            created_at=datetime.utcnow()
+            hashed_password=hashed_password,
+            is_active=True
         )
         
-        # Store user data
-        self.users[user_data.email] = {
-            "user": user,
-            "hashed_password": hashed_password
-        }
+        # Convert to User model for response
+        user = User(
+            id=db_user.id,
+            email=db_user.email,
+            full_name=db_user.full_name,
+            created_at=db_user.created_at,
+            is_active=db_user.is_active
+        )
         
         logger.info(f"User registered successfully: {user_data.email}")
         return user
     
     def authenticate_user(self, login_data: UserLogin) -> Optional[str]:
         """Authenticate user and return JWT token"""
-        user_data = self.users.get(login_data.email)
-        if not user_data:
+        # Get user from database
+        db_user = self.user_repository.get_by_email(login_data.email)
+        if not db_user:
             logger.warning(f"Login attempt with non-existent email: {login_data.email}")
             return None
         
-        if not self.verify_password(login_data.password, user_data["hashed_password"]):
+        if not self.verify_password(login_data.password, db_user.hashed_password):
             logger.warning(f"Invalid password for user: {login_data.email}")
+            return None
+        
+        if not db_user.is_active:
+            logger.warning(f"Login attempt for inactive user: {login_data.email}")
             return None
         
         # Create access token
@@ -96,63 +102,78 @@ class AuthService:
     
     def get_user_by_email(self, email: str) -> Optional[User]:
         """Get user by email"""
-        user_data = self.users.get(email)
-        if user_data:
-            return user_data["user"]
+        db_user = self.user_repository.get_by_email(email)
+        if db_user:
+            return User(
+                id=db_user.id,
+                email=db_user.email,
+                full_name=db_user.full_name,
+                created_at=db_user.created_at,
+                is_active=db_user.is_active
+            )
         return None
     
     def get_user_by_id(self, user_id: str) -> Optional[User]:
         """Get user by ID"""
-        for user_data in self.users.values():
-            if user_data["user"].id == user_id:
-                return user_data["user"]
+        db_user = self.user_repository.get_by_id(user_id)
+        if db_user:
+            return User(
+                id=db_user.id,
+                email=db_user.email,
+                full_name=db_user.full_name,
+                created_at=db_user.created_at,
+                is_active=db_user.is_active
+            )
         return None
     
     def update_user(self, user_id: str, **kwargs) -> Optional[User]:
-        """Update user information"""
-        for email, user_data in self.users.items():
-            if user_data["user"].id == user_id:
-                user = user_data["user"]
-                for key, value in kwargs.items():
-                    if hasattr(user, key):
-                        setattr(user, key, value)
-                return user
+        """Update user"""
+        db_user = self.user_repository.update(user_id, **kwargs)
+        if db_user:
+            return User(
+                id=db_user.id,
+                email=db_user.email,
+                full_name=db_user.full_name,
+                created_at=db_user.created_at,
+                is_active=db_user.is_active
+            )
         return None
     
     def delete_user(self, user_id: str) -> bool:
-        """Delete a user"""
-        for email, user_data in list(self.users.items()):
-            if user_data["user"].id == user_id:
-                del self.users[email]
-                logger.info(f"User deleted: {email}")
-                return True
-        return False
+        """Delete user"""
+        return self.user_repository.delete(user_id)
     
     def get_all_users(self) -> list[User]:
-        """Get all users (for admin purposes)"""
-        return [user_data["user"] for user_data in self.users.values()]
+        """Get all users"""
+        db_users = self.user_repository.get_all()
+        return [
+            User(
+                id=user.id,
+                email=user.email,
+                full_name=user.full_name,
+                created_at=user.created_at,
+                is_active=user.is_active
+            )
+            for user in db_users
+        ]
     
     def is_user_active(self, email: str) -> bool:
         """Check if user is active"""
-        user_data = self.users.get(email)
-        if user_data:
-            return user_data["user"].is_active
-        return False
+        user = self.get_user_by_email(email)
+        return user.is_active if user else False
     
     def deactivate_user(self, email: str) -> bool:
-        """Deactivate a user"""
-        user_data = self.users.get(email)
-        if user_data:
-            user_data["user"].is_active = False
-            logger.info(f"User deactivated: {email}")
-            return True
+        """Deactivate user"""
+        user = self.get_user_by_email(email)
+        if user:
+            updated_user = self.update_user(user.id, is_active=False)
+            return updated_user is not None
         return False
     
     def activate_user(self, email: str) -> bool:
-        """Activate a user"""
-        user_data = self.users.get(email)
-        if user_data:
-            user_data["user"].is_active = True
-            logger.info(f"User activated: {email}")
-            return True
+        """Activate user"""
+        user = self.get_user_by_email(email)
+        if user:
+            updated_user = self.update_user(user.id, is_active=True)
+            return updated_user is not None
         return False 

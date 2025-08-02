@@ -29,12 +29,22 @@ class Settings(BaseSettings):
     # Security Configuration
     bcrypt_rounds: int = 12
     
+    # Supabase Configuration
+    supabase_url: str = ""
+    supabase_anon_key: str = ""
+    supabase_service_role_key: str = ""
+    supabase_db_password: str = ""
+    
+    # Database Configuration
+    database_url: str = ""
+    
     # Logging Configuration
     log_level: str = "INFO"
     
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "allow"  # Allow extra fields from environment
 
 # Create settings instance
 settings = Settings()

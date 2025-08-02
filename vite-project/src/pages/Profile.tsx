@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import apiService from '../services/api';
+import { apiService } from '../services/api';
 
 const states = [
   'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
@@ -26,6 +26,7 @@ const Profile: React.FC = () => {
     zip: '',
     skills: [] as string[],
     availability: [] as Availability[],
+    preferences: '',
     newDate: '',
     newTime: '',
   });
@@ -52,6 +53,7 @@ const Profile: React.FC = () => {
         zip: profile.address.zip_code,
         skills: profile.skills,
         availability: profile.availability,
+        preferences: profile.preferences || '',
         newDate: '',
         newTime: '',
       });
@@ -124,6 +126,7 @@ const Profile: React.FC = () => {
         },
         skills: form.skills,
         availability: form.availability,
+        preferences: form.preferences,
       };
 
       if (profileExists) {
@@ -297,6 +300,23 @@ const Profile: React.FC = () => {
                   ))}
                 </ul>
               )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Preferences
+              </label>
+              <textarea
+                name="preferences"
+                placeholder="Tell us about your preferences for volunteering (e.g., preferred time of day, types of events, etc.)"
+                value={form.preferences}
+                onChange={handleChange}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Optional: Share your preferences to help us match you with the right opportunities
+              </p>
             </div>
 
             {error && (

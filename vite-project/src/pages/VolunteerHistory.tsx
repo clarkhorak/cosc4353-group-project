@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import apiService from '../services/api';
+import { apiService } from '../services/api';
 import type { VolunteerHistory, VolunteerStats } from '../services/api';
 
 const VolunteerHistory: React.FC = () => {
@@ -190,6 +190,24 @@ const VolunteerHistory: React.FC = () => {
                           <span className="font-medium text-gray-500">Joined:</span>
                           <span className="ml-2 text-gray-900">{formatDate(item.joined_at)}</span>
                         </div>
+                        {item.skills_used && item.skills_used.length > 0 && (
+                          <div className="md:col-span-2 lg:col-span-3">
+                            <span className="font-medium text-gray-500">Skills Used:</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {item.skills_used.map((skill, index) => (
+                                <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                  {skill}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {item.rating && (
+                          <div>
+                            <span className="font-medium text-gray-500">Rating:</span>
+                            <span className="ml-2 text-gray-900">⭐ {item.rating}/5</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

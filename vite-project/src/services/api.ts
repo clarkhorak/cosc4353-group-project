@@ -36,6 +36,7 @@ export interface ProfileCreate {
     date: string;
     time: string;
   }[];
+  preferences?: string;
 }
 
 export interface ProfileUpdate {
@@ -50,6 +51,7 @@ export interface ProfileUpdate {
     date: string;
     time: string;
   }[];
+  preferences?: string;
 }
 
 export interface Profile {
@@ -65,33 +67,42 @@ export interface Profile {
     date: string;
     time: string;
   }[];
+  preferences?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Event {
   id: number;
   title: string;
-  description: string;
+  description?: string;
   category: string;
   event_date: string;
   start_time: string;
   end_time: string;
   location: string;
   capacity: number;
+  requirements?: string;
+  required_skills?: string[];
+  urgency: string;
   status: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 export interface EventCreate {
   title: string;
-  description: string;
+  description?: string;
   category: string;
   event_date: string;
   start_time: string;
   end_time: string;
   location: string;
   capacity: number;
-  status: string;
+  requirements?: string;
+  required_skills?: string[];
+  urgency?: string;
+  status?: string;
 }
 
 export interface VolunteerHistory {
@@ -103,7 +114,10 @@ export interface VolunteerHistory {
   event_time: string;
   location: string;
   status: string;
+  skills_used?: string[];
+  rating?: number;
   joined_at: string;
+  updated_at?: string;
 }
 
 export interface VolunteerStats {
@@ -216,7 +230,7 @@ class ApiService {
 
   // Profile endpoints
   async createProfile(data: ProfileCreate): Promise<Profile> {
-    const response = await fetch(`${API_BASE_URL}/profile`, {
+    const response = await fetch(`${API_BASE_URL}/profiles/`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(data),
@@ -225,14 +239,14 @@ class ApiService {
   }
 
   async getMyProfile(): Promise<Profile> {
-    const response = await fetch(`${API_BASE_URL}/profile`, {
+    const response = await fetch(`${API_BASE_URL}/profiles/me`, {
       headers: this.getAuthHeaders(),
     });
     return this.handleResponse<Profile>(response);
   }
 
   async updateProfile(data: ProfileUpdate): Promise<Profile> {
-    const response = await fetch(`${API_BASE_URL}/profile`, {
+    const response = await fetch(`${API_BASE_URL}/profiles/me`, {
       method: 'PUT',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(data),
@@ -241,7 +255,7 @@ class ApiService {
   }
 
   async deleteProfile(): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/profile`, {
+    const response = await fetch(`${API_BASE_URL}/profiles/me`, {
       method: 'DELETE',
       headers: this.getAuthHeaders(),
     });
@@ -250,9 +264,39 @@ class ApiService {
     }
   }
 
+  async getAllProfiles(): Promise<Profile[]> {
+    const response = await fetch(`${API_BASE_URL}/profiles/`, {
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse<Profile[]>(response);
+  }
+
+  async searchProfilesBySkills(skills: string[]): Promise<Profile[]> {
+    const params = new URLSearchParams();
+    skills.forEach(skill => params.append('skills', skill));
+    const response = await fetch(`${API_BASE_URL}/profiles/search/skills?${params}`, {
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse<Profile[]>(response);
+  }
+
+  async searchProfilesByLocation(city: string, state?: string): Promise<Profile[]> {
+    const params = new URLSearchParams({ city });
+    if (state) params.append('state', state);
+    const response = await fetch(`${API_BASE_URL}/profiles/search/location?${params}`, {
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse<Profile[]>(response);
+  }
+
   // Event endpoints
-  async getEvents(): Promise<Event[]> {
-    const response = await fetch(`${API_BASE_URL}/events`, {
+  async getEvents(search?: string, category?: string, status?: string): Promise<Event[]> {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (category) params.append('category', category);
+    if (status) params.append('status', status);
+    
+    const response = await fetch(`${API_BASE_URL}/events/?${params}`, {
       headers: this.getAuthHeaders(),
     });
     return this.handleResponse<Event[]>(response);
@@ -266,7 +310,7 @@ class ApiService {
   }
 
   async createEvent(data: EventCreate): Promise<Event> {
-    const response = await fetch(`${API_BASE_URL}/events`, {
+    const response = await fetch(`${API_BASE_URL}/events/`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(data),
@@ -295,7 +339,7 @@ class ApiService {
 
   // History endpoints
   async getHistory(): Promise<VolunteerHistory[]> {
-    const response = await fetch(`${API_BASE_URL}/history`, {
+    const response = await fetch(`${API_BASE_URL}/history/`, {
       headers: this.getAuthHeaders(),
     });
     return this.handleResponse<VolunteerHistory[]>(response);
@@ -317,49 +361,25 @@ class ApiService {
     return this.handleResponse<VolunteerHistory>(response);
   }
 
-  // Matching endpoints
-  async signupForEvent(eventId: number): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/matching/signup/${eventId}`, {
-      method: 'POST',
+  async updateParticipationStatus(eventId: number, status: string, rating?: number): Promise<VolunteerHistory> {
+    const response = await fetch(`${API_BASE_URL}/history/${eventId}/status`, {
+      method: 'PUT',
       headers: this.getAuthHeaders(),
+      body: JSON.stringify({ status, rating }),
     });
-    return this.handleResponse<any>(response);
-  }
-
-  async cancelSignup(eventId: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/matching/signup/${eventId}`, {
-      method: 'DELETE',
-      headers: this.getAuthHeaders(),
-    });
-    if (!response.ok) {
-      throw new Error('Failed to cancel signup');
-    }
-  }
-
-  async getEventSignups(eventId: number): Promise<any[]> {
-    const response = await fetch(`${API_BASE_URL}/matching/event/${eventId}/signups`, {
-      headers: this.getAuthHeaders(),
-    });
-    return this.handleResponse<any[]>(response);
-  }
-
-  async getVolunteerSignups(): Promise<any[]> {
-    const response = await fetch(`${API_BASE_URL}/matching/volunteer/signups`, {
-      headers: this.getAuthHeaders(),
-    });
-    return this.handleResponse<any[]>(response);
+    return this.handleResponse<VolunteerHistory>(response);
   }
 
   // Notification endpoints
   async getNotifications(): Promise<Notification[]> {
-    const response = await fetch(`${API_BASE_URL}/notifications`, {
+    const response = await fetch(`${API_BASE_URL}/notifications/`, {
       headers: this.getAuthHeaders(),
     });
     return this.handleResponse<Notification[]>(response);
   }
 
   async createNotification(data: NotificationCreate): Promise<Notification> {
-    const response = await fetch(`${API_BASE_URL}/notifications`, {
+    const response = await fetch(`${API_BASE_URL}/notifications/`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(data),
@@ -404,5 +424,4 @@ class ApiService {
   }
 }
 
-const apiService = new ApiService();
-export default apiService; 
+export const apiService = new ApiService(); 

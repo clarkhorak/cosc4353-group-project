@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import apiService from '../services/api';
+import { apiService } from '../services/api';
 import type { Event } from '../services/api';
 
 const AvailableEvents: React.FC = () => {
@@ -142,6 +142,28 @@ const AvailableEvents: React.FC = () => {
                       <span className="font-medium w-20">Capacity:</span>
                       <span>{event.capacity} volunteers</span>
                     </div>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <span className="font-medium w-20">Urgency:</span>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        event.urgency === 'High' ? 'bg-red-100 text-red-800' :
+                        event.urgency === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {event.urgency}
+                      </span>
+                    </div>
+                    {event.required_skills && event.required_skills.length > 0 && (
+                      <div className="flex items-start text-sm text-gray-500">
+                        <span className="font-medium w-20">Skills:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {event.required_skills.map((skill, index) => (
+                            <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-between items-center">

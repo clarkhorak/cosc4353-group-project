@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import apiService from '../services/api';
+import { apiService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login: React.FC = () => {

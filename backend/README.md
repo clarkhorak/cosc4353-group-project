@@ -15,9 +15,9 @@ This is the backend API for the Volunteer Management System, built with FastAPI 
 - **API Documentation**: Auto-generated OpenAPI/Swagger documentation
 - **Comprehensive Testing**: Unit tests, API tests, and >80% code coverage
 - **Frontend Integration**: Complete React frontend with real-time API integration
+- **Database Integration**: Supabase PostgreSQL database with SQLAlchemy ORM
 
 ### 🚧 In Progress
-- **Database Integration**: Moving from in-memory to persistent storage
 - **Advanced Features**: Email notifications, file uploads
 - **Performance Optimization**: Caching and query optimization
 
@@ -25,6 +25,7 @@ This is the backend API for the Volunteer Management System, built with FastAPI 
 
 - **Framework**: FastAPI with automatic API documentation
 - **Language**: Python 3.8+
+- **Database**: Supabase PostgreSQL with SQLAlchemy ORM
 - **Authentication**: JWT with bcrypt password hashing
 - **Validation**: Pydantic v2 with comprehensive validation
 - **Testing**: Pytest with async support and coverage reporting
@@ -38,6 +39,31 @@ This is the backend API for the Volunteer Management System, built with FastAPI 
 - Python 3.8 or higher
 - pip (Python package manager)
 - Node.js 16+ (for frontend)
+- Supabase account (for database)
+
+### Database Setup (Supabase)
+
+1. **Create a Supabase project:**
+   - Go to [supabase.com](https://supabase.com)
+   - Sign up and create a new project
+   - Note down your project URL and API keys
+
+2. **Configure environment variables:**
+   ```bash
+   # Copy the example environment file
+   cp env.example .env
+   
+   # Edit .env with your Supabase credentials
+   SUPABASE_URL=https://your-project-ref.supabase.co
+   SUPABASE_ANON_KEY=your-anon-key
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+   SECRET_KEY=your-secret-key-change-in-production
+   ```
+
+3. **Initialize database tables:**
+   ```bash
+   python create_tables.py
+   ```
 
 ### Installation
 

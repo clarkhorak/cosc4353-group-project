@@ -98,9 +98,9 @@ async def login(login_data: UserLogin):
 
 @router.post("/logout")
 async def logout(current_user: User = Depends(get_current_user)):
-    """Logout user (in a real implementation, you might blacklist the token)"""
+    """Logout user (client-side token removal)"""
     logger.info(f"User logged out: {current_user.email}")
-    return {"message": "Successfully logged out"}
+    return {"message": "Logout successful"}
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
@@ -120,17 +120,17 @@ async def update_current_user(
 ):
     """Update current user information"""
     try:
-        # Only allow updating certain fields
-        allowed_fields = {"full_name"}
-        update_data = {k: v for k, v in user_update.items() if k in allowed_fields}
+        # Remove sensitive fields that shouldn't be updated via this endpoint
+        if "email" in user_update:
+            del user_update["email"]
+        if "hashed_password" in user_update:
+            del user_update["hashed_password"]
+        if "id" in user_update:
+            del user_update["id"]
+        if "created_at" in user_update:
+            del user_update["created_at"]
         
-        if not update_data:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No valid fields to update"
-            )
-        
-        updated_user = auth_service.update_user(current_user.id, **update_data)
+        updated_user = auth_service.update_user(current_user.id, **user_update)
         if not updated_user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -145,10 +145,14 @@ async def update_current_user(
             created_at=updated_user.created_at,
             is_active=updated_user.is_active
         )
-    except HTTPException:
-        raise
+    except ValueError as e:
+        logger.warning(f"User update failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except Exception as e:
-        logger.error(f"Error updating user: {e}")
+        logger.error(f"Unexpected error during user update: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error"
@@ -165,11 +169,9 @@ async def delete_current_user(current_user: User = Depends(get_current_user)):
                 detail="User not found"
             )
         
-        logger.info(f"User account deleted: {current_user.email}")
-    except HTTPException:
-        raise
+        logger.info(f"User deleted: {current_user.email}")
     except Exception as e:
-        logger.error(f"Error deleting user: {e}")
+        logger.error(f"Unexpected error during user deletion: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error"
@@ -180,6 +182,11 @@ async def verify_token(current_user: User = Depends(get_current_user)):
     """Verify if the current token is valid"""
     return {
         "valid": True,
-        "user_id": current_user.id,
-        "email": current_user.email
+        "user": UserResponse(
+            id=current_user.id,
+            email=current_user.email,
+            full_name=current_user.full_name,
+            created_at=current_user.created_at,
+            is_active=current_user.is_active
+        )
     } 

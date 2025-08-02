@@ -15,7 +15,7 @@ TEST_ADDRESS = Address(
     address1="123 Main St",
     address2="Apt 4B",
     city="Houston",
-    state="TX",
+    state_code="TX",
     zip_code="77001"
 )
 
@@ -57,7 +57,7 @@ def test_profile_service():
         print("  📖 Testing get_profile...")
         retrieved_profile = await service.get_profile(1)
         assert retrieved_profile.user_id == "1"
-        assert retrieved_profile.address.state == "TX"
+        assert retrieved_profile.address.state_code == "TX"
         print("    ✅ get_profile passed")
         
         # Test update profile
