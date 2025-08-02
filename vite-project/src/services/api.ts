@@ -20,6 +20,7 @@ export interface User {
   id: string;
   email: string;
   full_name: string;
+  role: string;  // Added role field
   created_at: string;
   is_active: boolean;
 }
@@ -28,7 +29,7 @@ export interface ProfileCreate {
   address: {
     address1: string;
     city: string;
-    state: string;
+    state_code: string;
     zip_code: string;
   };
   skills: string[];
@@ -43,7 +44,7 @@ export interface ProfileUpdate {
   address?: {
     address1: string;
     city: string;
-    state: string;
+    state_code: string;
     zip_code: string;
   };
   skills?: string[];
@@ -59,7 +60,7 @@ export interface Profile {
   address: {
     address1: string;
     city: string;
-    state: string;
+    state_code: string;
     zip_code: string;
   };
   skills: string[];
@@ -280,9 +281,9 @@ class ApiService {
     return this.handleResponse<Profile[]>(response);
   }
 
-  async searchProfilesByLocation(city: string, state?: string): Promise<Profile[]> {
+  async searchProfilesByLocation(city: string, state_code?: string): Promise<Profile[]> {
     const params = new URLSearchParams({ city });
-    if (state) params.append('state', state);
+    if (state_code) params.append('state_code', state_code);
     const response = await fetch(`${API_BASE_URL}/profiles/search/location?${params}`, {
       headers: this.getAuthHeaders(),
     });
@@ -403,6 +404,42 @@ class ApiService {
     if (!response.ok) {
       throw new Error('Failed to delete notification');
     }
+  }
+
+  // Admin endpoints
+  async getUsers(): Promise<User[]> {
+    console.log('Calling getUsers API endpoint...');
+    const response = await fetch(`${API_BASE_URL}/auth/admin/users`, {
+      headers: this.getAuthHeaders(),
+    });
+    console.log('getUsers response status:', response.status);
+    const result = await this.handleResponse<User[]>(response);
+    console.log('getUsers result:', result);
+    return result;
+  }
+
+  async promoteUser(email: string): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/auth/admin/users/${email}/promote`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse<{ message: string }>(response);
+  }
+
+  async demoteUser(email: string): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/auth/admin/users/${email}/demote`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse<{ message: string }>(response);
+  }
+
+  async deleteUser(email: string): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/auth/admin/users/${email}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse<{ message: string }>(response);
   }
 
   // Utility methods

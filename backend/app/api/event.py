@@ -5,17 +5,19 @@ from app.models.user import User
 from app.services.event_service import EventService
 from app.api.auth import get_current_user
 from app.utils.exceptions import ValidationError
+from app.utils.rbac import admin_required
 
 router = APIRouter(prefix="/events", tags=["events"])
 
 
 @router.post("/", response_model=EventResponse, status_code=201)
+@admin_required
 async def create_event(
     event_data: EventCreate,
     current_user: User = Depends(get_current_user),
     event_service: EventService = Depends()
 ):
-    """Create a new event"""
+    """Create a new event (admin only)"""
     try:
         return event_service.create_event(event_data, user_id=current_user.id)
     except ValidationError as e:
@@ -31,7 +33,7 @@ async def list_events(
     status: Optional[str] = Query(None, description="Filter by event status"),
     event_service: EventService = Depends()
 ):
-    """Get all events with optional filtering and pagination"""
+    """Get all events with optional filtering and pagination (all users can view)"""
     return event_service.list_events(
         skip=skip, 
         limit=limit, 
@@ -46,7 +48,7 @@ async def get_event(
     event_id: int,
     event_service: EventService = Depends()
 ):
-    """Get a specific event by ID"""
+    """Get a specific event by ID (all users can view)"""
     try:
         return event_service.get_event(event_id)
     except ValidationError as e:
@@ -54,13 +56,14 @@ async def get_event(
 
 
 @router.put("/{event_id}", response_model=EventResponse)
+@admin_required
 async def update_event(
     event_id: int,
     event_data: EventUpdate,
     current_user: User = Depends(get_current_user),
     event_service: EventService = Depends()
 ):
-    """Update an event (only by the creator)"""
+    """Update an event (admin only)"""
     try:
         return event_service.update_event(event_id, event_data)
     except ValidationError as e:
@@ -68,12 +71,13 @@ async def update_event(
 
 
 @router.delete("/{event_id}", status_code=204)
+@admin_required
 async def delete_event(
     event_id: int,
     current_user: User = Depends(get_current_user),
     event_service: EventService = Depends()
 ):
-    """Delete an event (only by the creator)"""
+    """Delete an event (admin only)"""
     try:
         event_service.delete_event(event_id)
         return None

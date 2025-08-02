@@ -49,7 +49,7 @@ const Profile: React.FC = () => {
       setForm({
         address1: profile.address.address1,
         city: profile.address.city,
-        state: profile.address.state,
+        state: profile.address.state_code,
         zip: profile.address.zip_code,
         skills: profile.skills,
         availability: profile.availability,
@@ -121,7 +121,7 @@ const Profile: React.FC = () => {
         address: {
           address1: form.address1,
           city: form.city,
-          state: form.state,
+          state_code: form.state,
           zip_code: form.zip,
         },
         skills: form.skills,

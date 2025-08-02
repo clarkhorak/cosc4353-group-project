@@ -29,6 +29,7 @@ class User(Base):
     email = Column(String, unique=True, nullable=False)
     full_name = Column(String, nullable=False)
     hashed_password = Column(String, nullable=False)
+    role = Column(String, nullable=False, default="volunteer")  # Added role field
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True)
     
@@ -37,6 +38,7 @@ class User(Base):
         CheckConstraint("length(full_name) >= 2", name="full_name_min_length"),
         CheckConstraint("length(full_name) <= 50", name="full_name_max_length"),
         CheckConstraint(r"email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'", name="valid_email_format"),
+        CheckConstraint("role IN ('volunteer', 'admin')", name="valid_user_role"),  # Added role constraint
     )
     
     # Relationships

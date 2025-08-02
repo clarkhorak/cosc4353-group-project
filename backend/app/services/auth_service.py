@@ -59,11 +59,12 @@ class AuthService:
         # Hash password
         hashed_password = self.hash_password(user_data.password)
         
-        # Create user in database
+        # Create user in database with role
         db_user = self.user_repository.create(
             email=user_data.email,
             full_name=user_data.full_name,
             hashed_password=hashed_password,
+            role=user_data.role,  # Added role field
             is_active=True
         )
         
@@ -72,11 +73,12 @@ class AuthService:
             id=db_user.id,
             email=db_user.email,
             full_name=db_user.full_name,
+            role=db_user.role,  # Added role field
             created_at=db_user.created_at,
             is_active=db_user.is_active
         )
         
-        logger.info(f"User registered successfully: {user_data.email}")
+        logger.info(f"User registered successfully: {user_data.email} with role: {user_data.role}")
         return user
     
     def authenticate_user(self, login_data: UserLogin) -> Optional[str]:
@@ -108,6 +110,7 @@ class AuthService:
                 id=db_user.id,
                 email=db_user.email,
                 full_name=db_user.full_name,
+                role=db_user.role,  # Added role field
                 created_at=db_user.created_at,
                 is_active=db_user.is_active
             )
@@ -121,6 +124,7 @@ class AuthService:
                 id=db_user.id,
                 email=db_user.email,
                 full_name=db_user.full_name,
+                role=db_user.role,  # Added role field
                 created_at=db_user.created_at,
                 is_active=db_user.is_active
             )
@@ -134,6 +138,7 @@ class AuthService:
                 id=db_user.id,
                 email=db_user.email,
                 full_name=db_user.full_name,
+                role=db_user.role,  # Added role field
                 created_at=db_user.created_at,
                 is_active=db_user.is_active
             )
@@ -151,6 +156,7 @@ class AuthService:
                 id=user.id,
                 email=user.email,
                 full_name=user.full_name,
+                role=user.role,  # Added role field
                 created_at=user.created_at,
                 is_active=user.is_active
             )
@@ -176,4 +182,32 @@ class AuthService:
         if user:
             updated_user = self.update_user(user.id, is_active=True)
             return updated_user is not None
+        return False
+    
+    def promote_to_admin(self, email: str) -> bool:
+        """Promote user to admin role"""
+        user = self.get_user_by_email(email)
+        if user:
+            updated_user = self.update_user(user.id, role="admin")
+            logger.info(f"User promoted to admin: {email}")
+            return updated_user is not None
+        return False
+    
+    def demote_to_volunteer(self, email: str) -> bool:
+        """Demote user to volunteer role"""
+        user = self.get_user_by_email(email)
+        if user:
+            updated_user = self.update_user(user.id, role="volunteer")
+            logger.info(f"User demoted to volunteer: {email}")
+            return updated_user is not None
+        return False
+    
+    def delete_user_by_email(self, email: str) -> bool:
+        """Delete user by email"""
+        user = self.get_user_by_email(email)
+        if user:
+            success = self.delete_user(user.id)
+            if success:
+                logger.info(f"User deleted: {email}")
+            return success
         return False 

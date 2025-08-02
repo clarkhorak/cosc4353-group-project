@@ -7,6 +7,7 @@ class UserBase(BaseModel):
     """Base user model with common fields"""
     email: EmailStr
     full_name: str
+    role: str = "volunteer"  # Added role field with default
     
     @field_validator('full_name')
     @classmethod
@@ -18,6 +19,13 @@ class UserBase(BaseModel):
         if not re.match(r'^[a-zA-Z\s]+$', v.strip()):
             raise ValueError('Full name can only contain letters and spaces')
         return v.strip()
+    
+    @field_validator('role')
+    @classmethod
+    def validate_role(cls, v):
+        if v not in ['volunteer', 'admin']:
+            raise ValueError('Role must be either "volunteer" or "admin"')
+        return v
 
 class UserCreate(UserBase):
     """User registration model"""
@@ -56,6 +64,7 @@ class UserResponse(BaseModel):
     id: str
     email: EmailStr
     full_name: str
+    role: str  # Added role field
     created_at: datetime
     is_active: bool
     
