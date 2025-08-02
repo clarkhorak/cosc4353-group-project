@@ -37,31 +37,32 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 2. **Register a new user:**
    - Click "Register here" on the login page
    - Fill in the registration form:
-     - Username: `testuser`
-     - Full Name: `Test User`
      - Email: `test@example.com`
+     - Full Name: `Test User`
      - Password: `TestPass123` (must include uppercase)
    - Click "Register"
 
 3. **Login with the registered user:**
-   - Username: `testuser`
+   - Email: `test@example.com`
    - Password: `TestPass123`
    - Click "Login"
 
 4. **Create/Update Profile:**
    - Fill in your address information
+   - Select state from dropdown
    - Select skills (hold Ctrl/Cmd to select multiple)
    - Add availability dates and times
    - Add preferences (optional)
    - Click "Create Profile" or "Update Profile"
 
-5. **Test Navigation:**
+5. **Test Admin Features (if admin role):**
+   - Navigate to Admin Dashboard
+   - Create and manage events
+   - View all users
+
+6. **Test Navigation:**
    - Navigate between different pages using the navbar
    - Verify that authentication persists across page refreshes
-
-6. **Test Logout:**
-   - Click logout or navigate to `/logout`
-   - Verify you're redirected to the login page
 
 ### Expected Behavior
 
@@ -69,8 +70,8 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - ✅ Login gets JWT token and updates authentication state
 - ✅ Profile loads existing data or allows creation of new profile
 - ✅ Protected routes work with authentication
-- ✅ Logout clears token and redirects to login
-- ✅ Error messages display properly for failed operations
+- ✅ Admin dashboard accessible only to admin users
+- ✅ Role-based navigation and features
 
 ## 🔧 Development
 
@@ -78,17 +79,17 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 src/
 ├── components/          # Reusable UI components
-│   ├── Navbar.tsx      # Navigation component
-│   └── AdminLink.tsx   # Admin-specific components
+│   └── Navbar.tsx      # Navigation component with role-based links
 ├── pages/              # Route-specific page components
 │   ├── Login.tsx       # Login page
 │   ├── Register.tsx    # Registration page
-│   ├── Profile.tsx     # Profile management
+│   ├── Profile.tsx     # Profile management with state validation
+│   ├── AdminDashboard.tsx # Admin interface for managing events/users
 │   └── ...             # Other pages
 ├── services/           # API communication
 │   └── api.ts          # API service layer
 ├── contexts/           # React contexts
-│   └── AuthContext.tsx # Authentication context
+│   └── AuthContext.tsx # Authentication context with role management
 └── App.tsx             # Main application component
 ```
 
@@ -96,9 +97,9 @@ src/
 
 - **TypeScript**: Full type safety throughout the application
 - **React Router**: Client-side routing with protected routes
-- **Context API**: Global state management for authentication
+- **Context API**: Global state management for authentication and roles
 - **API Integration**: Complete integration with FastAPI backend
-- **Error Handling**: Comprehensive error handling and user feedback
+- **Role-based UI**: Different interfaces for admin and volunteer users
 
 ### Available Scripts
 
@@ -112,19 +113,19 @@ src/
 The frontend communicates with the backend through the `api.ts` service layer:
 
 ### Authentication Endpoints
-- `POST /auth/register` - User registration
+- `POST /auth/register` - User registration with role assignment
 - `POST /auth/login` - User login  
-- `POST /auth/logout` - User logout
-- `GET /auth/me` - Get current user
+- `GET /auth/me` - Get current user with role information
+
+### Admin Endpoints
+- `GET /admin/users` - Get all users (admin only)
+- `POST /admin/events` - Create events (admin only)
+- `PUT /admin/events/{id}` - Update events (admin only)
 
 ### Profile Endpoints
-- `POST /profiles/` - Create profile
-- `GET /profiles/me` - Get my profile
-- `PUT /profiles/me` - Update my profile
-- `DELETE /profiles/me` - Delete my profile
-- `GET /profiles/` - Get all profiles
-- `GET /profiles/search/skills` - Search by skills
-- `GET /profiles/search/location` - Search by location
+- `POST /profile` - Create profile with state validation
+- `GET /profile` - Get my profile
+- `PUT /profile` - Update my profile
 
 ## 🆘 Troubleshooting
 
@@ -145,10 +146,10 @@ The frontend communicates with the backend through the `api.ts` service layer:
 - Verify token format in browser dev tools
 - Ensure backend authentication is working
 
-**Build errors:**
-- Check TypeScript compilation errors
-- Verify all imports are correct
-- Ensure all required dependencies are installed
+**Admin features not working:**
+- Verify user has admin role in backend
+- Check role-based routing in frontend
+- Ensure admin endpoints are properly protected
 
 ### Debugging
 
@@ -168,26 +169,26 @@ The frontend communicates with the backend through the `api.ts` service layer:
 
 - JWT tokens are stored in localStorage
 - All API calls include proper authentication headers
-- Input validation is handled on both frontend and backend
-- CORS is properly configured for development
+- Role-based access control implemented
+- Input validation handled on both frontend and backend
 
 ## 🚧 Current Status
 
 ### ✅ Completed
-- User authentication (login/register/logout)
-- Profile management (create/read/update)
+- User authentication (login/register) with role assignment
+- Profile management with state validation
+- Admin dashboard with user and event management
+- Role-based navigation and access control
 - API integration with backend
 - Authentication context and state management
-- Error handling and user feedback
 
 ### 🚧 In Progress
-- Event management interface
-- Volunteer matching interface
-- Notification system
-- Admin dashboard
+- Enhanced event management interface
+- Advanced volunteer matching interface
+- Real-time notification system
+- Mobile responsiveness improvements
 
 ### 📋 Planned
-- Mobile responsiveness improvements
 - Advanced search and filtering UI
 - File upload for profile pictures
 - Real-time notifications
