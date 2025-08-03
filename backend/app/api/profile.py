@@ -17,9 +17,22 @@ async def create_profile(
 ):
     """Create a new user profile"""
     try:
-        # Convert string ID to int for the service
-        user_id = int(current_user.id)
-        profile = await profile_service.create_profile(user_id, profile_data)
+        # Use the user ID directly (it's already a string)
+        profile = profile_service.create_profile(current_user.id, profile_data)
+        return profile
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/me", response_model=Profile, status_code=201)
+async def create_my_profile(
+    profile_data: ProfileCreate,
+    current_user: User = Depends(get_current_user),
+    profile_service: ProfileService = Depends()
+):
+    """Create current user's profile"""
+    try:
+        profile = profile_service.create_profile(current_user.id, profile_data)
         return profile
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -32,8 +45,7 @@ async def get_my_profile(
 ):
     """Get current user's profile"""
     try:
-        user_id = int(current_user.id)
-        profile = await profile_service.get_profile(user_id)
+        profile = profile_service.get_profile(current_user.id)
         return profile
     except ProfileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -46,7 +58,7 @@ async def get_profile(
 ):
     """Get profile by ID"""
     try:
-        profile = await profile_service.get_profile_by_id(profile_id)
+        profile = profile_service.get_profile_by_id(profile_id)
         return profile
     except ProfileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -60,8 +72,7 @@ async def update_my_profile(
 ):
     """Update current user's profile"""
     try:
-        user_id = int(current_user.id)
-        profile = await profile_service.update_profile(user_id, profile_data)
+        profile = profile_service.update_profile(current_user.id, profile_data)
         return profile
     except ProfileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -76,8 +87,7 @@ async def delete_my_profile(
 ):
     """Delete current user's profile"""
     try:
-        user_id = int(current_user.id)
-        await profile_service.delete_profile(user_id)
+        profile_service.delete_profile(current_user.id)
         return None
     except ProfileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -90,7 +100,7 @@ async def get_all_profiles(
     profile_service: ProfileService = Depends()
 ):
     """Get all profiles with pagination"""
-    profiles = await profile_service.get_all_profiles(skip=skip, limit=limit)
+    profiles = profile_service.get_all_profiles(skip=skip, limit=limit)
     return profiles
 
 
@@ -100,7 +110,7 @@ async def search_profiles_by_skills(
     profile_service: ProfileService = Depends()
 ):
     """Search profiles by skills"""
-    profiles = await profile_service.search_profiles_by_skills(skills)
+    profiles = profile_service.search_profiles_by_skills(skills)
     return profiles
 
 
@@ -111,5 +121,5 @@ async def search_profiles_by_location(
     profile_service: ProfileService = Depends()
 ):
     """Search profiles by location"""
-    profiles = await profile_service.search_profiles_by_location(city, state)
+    profiles = profile_service.search_profiles_by_location(city, state)
     return profiles 
