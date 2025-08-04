@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';
 import type { VolunteerHistory, VolunteerStats } from '../services/api';
 
-const VolunteerHistory: React.FC = () => {
+const VolunteerHistoryPage: React.FC = () => {
   const { user } = useAuth();
   const [history, setHistory] = useState<VolunteerHistory[]>([]);
   const [stats, setStats] = useState<VolunteerStats | null>(null);
@@ -221,4 +221,4 @@ const VolunteerHistory: React.FC = () => {
   );
 };
 
-export default VolunteerHistory;
+export default VolunteerHistoryPage;

@@ -13,7 +13,7 @@ import Register from './pages/Register';
 import Profile from './pages/Profile.tsx';
 import AdminDashboard from './pages/AdminDashboard';
 import VolunteerMatching from './pages/VolunteerMatching';
-import VolunteerHistory from './pages/VolunteerHistory';
+import VolunteerHistoryPage from './pages/VolunteerHistory';
 import Notifications from './pages/Notifications';
 import AvailableEvents from './pages/AvailableEvents';
 import Logout from './pages/Logout';
@@ -28,7 +28,7 @@ const App: React.FC = () => {
         <Route path="/profile" element={<Profile />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/match" element={<VolunteerMatching />} />
-        <Route path="/history" element={<VolunteerHistory />} />
+        <Route path="/history" element={<VolunteerHistoryPage />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/available-events" element={<AvailableEvents />} />
         <Route path="/logout" element={<Logout />} />
