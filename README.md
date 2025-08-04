@@ -60,7 +60,16 @@ cd cosc4353-group-project
 ```bash
 cd backend
 python -m venv venv
-# Activate virtual environment
+# On Windows (PowerShell)
+.\venv\Scripts\Activate.ps1
+
+# On Windows (Command Prompt)
+venv\Scripts\activate
+
+# On macOS/Linux
+source venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
 python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
