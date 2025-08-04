@@ -1,8 +1,10 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.models.notification import NotificationCreate, NotificationResponse
+from app.models.user import User
 from app.services.notification_service import NotificationService
 from app.utils.exceptions import ValidationError
+from app.api.auth import get_current_user
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
@@ -24,10 +26,10 @@ async def create_notification(
 
 @router.get("/", response_model=List[NotificationResponse])
 async def list_notifications_for_user(
-    user_id: str = Query(...),
+    current_user: User = Depends(get_current_user),
     notification_service: NotificationService = Depends(get_notification_service)
 ):
-    return await notification_service.list_notifications_for_user(user_id)
+    return await notification_service.list_notifications_for_user(str(current_user.id))
 
 @router.put("/{notification_id}/read", response_model=NotificationResponse)
 async def mark_as_read(

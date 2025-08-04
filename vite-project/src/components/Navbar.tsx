@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Navbar: React.FC = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -50,9 +50,27 @@ const Navbar: React.FC = () => {
                 >
                   Notifications
                 </Link>
+                
+                {/* Admin-specific links */}
+                {isAdmin() && (
+                  <>
+                    <Link
+                      to="/admin"
+                      className="text-red-600 hover:text-red-700 px-3 py-2 rounded-md text-sm font-medium transition-colors font-bold"
+                    >
+                      Admin Dashboard
+                    </Link>
+                  </>
+                )}
+                
                 <div className="flex items-center space-x-4">
                   <span className="text-sm text-gray-700">
                     Welcome, {user?.full_name}
+                    {isAdmin() && (
+                      <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                        Admin
+                      </span>
+                    )}
                   </span>
                   <button
                     onClick={handleLogout}

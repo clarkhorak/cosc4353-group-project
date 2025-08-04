@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import apiService from '../services/api';
+import { apiService } from '../services/api';
 
 interface User {
   id: string;
   email: string;
   full_name: string;
+  role: string;  // Added role field
   created_at: string;
   is_active: boolean;
 }
@@ -17,6 +18,8 @@ interface AuthContextType {
   login: (token: string, userData: User) => void;
   logout: () => void;
   checkAuth: () => Promise<void>;
+  isAdmin: () => boolean;  // Added admin check
+  isVolunteer: () => boolean;  // Added volunteer check
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -64,6 +67,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
   };
 
+  const isAdmin = () => {
+    return user?.role === 'admin';
+  };
+
+  const isVolunteer = () => {
+    return user?.role === 'volunteer';
+  };
+
   useEffect(() => {
     checkAuth();
   }, []);
@@ -75,6 +86,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     checkAuth,
+    isAdmin,
+    isVolunteer,
   };
 
   return (

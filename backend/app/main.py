@@ -11,6 +11,9 @@ from app.api.matching import router as matching_router
 from app.api.notification import router as notification_router
 from app.api.history import router as history_router
 
+# Import database
+from app.database import create_tables
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -40,6 +43,15 @@ app.include_router(event_router)
 app.include_router(matching_router)
 app.include_router(notification_router)
 app.include_router(history_router)
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database tables on startup"""
+    try:
+        create_tables()
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Failed to create database tables: {e}")
 
 @app.get("/")
 async def root():

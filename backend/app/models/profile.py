@@ -8,7 +8,7 @@ class Address(BaseModel):
     address1: str
     address2: Optional[str] = None
     city: str
-    state: str
+    state_code: str  # Changed from state to state_code
     zip_code: str
     
     @field_validator('address1')
@@ -29,11 +29,11 @@ class Address(BaseModel):
             raise ValueError('City cannot exceed 50 characters')
         return v.strip()
     
-    @field_validator('state')
+    @field_validator('state_code')  # Updated validator name
     @classmethod
-    def validate_state(cls, v):
+    def validate_state_code(cls, v):  # Updated method name
         if len(v.strip()) != 2:
-            raise ValueError('State must be 2 characters (e.g., TX, CA)')
+            raise ValueError('State code must be 2 characters (e.g., TX, CA)')
         return v.strip().upper()
     
     @field_validator('zip_code')
