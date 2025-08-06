@@ -216,7 +216,7 @@ class ApiService {
 
   // Profile endpoints
   async createProfile(data: ProfileCreate): Promise<Profile> {
-    const response = await fetch(`${API_BASE_URL}/profile`, {
+    const response = await fetch(`${API_BASE_URL}/profiles/`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(data),
@@ -225,14 +225,14 @@ class ApiService {
   }
 
   async getMyProfile(): Promise<Profile> {
-    const response = await fetch(`${API_BASE_URL}/profile`, {
+    const response = await fetch(`${API_BASE_URL}/profiles/me`, {
       headers: this.getAuthHeaders(),
     });
     return this.handleResponse<Profile>(response);
   }
 
   async updateProfile(data: ProfileUpdate): Promise<Profile> {
-    const response = await fetch(`${API_BASE_URL}/profile`, {
+    const response = await fetch(`${API_BASE_URL}/profiles/me`, {
       method: 'PUT',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(data),
@@ -241,7 +241,7 @@ class ApiService {
   }
 
   async deleteProfile(): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/profile`, {
+    const response = await fetch(`${API_BASE_URL}/profiles/me`, {
       method: 'DELETE',
       headers: this.getAuthHeaders(),
     });
