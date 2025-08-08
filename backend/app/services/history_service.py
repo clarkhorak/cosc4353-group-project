@@ -9,11 +9,18 @@ class HistoryService:
     def __init__(self):
         self.histories: Dict[str, List[VolunteerHistory]] = {}  # user_id -> list of participations
         self.next_id = 1
-        # Mock event data for testing
-        self.mock_events = {
-            1: {"name": "Community Cleanup", "date": date(2025, 12, 25), "time": time(14, 0), "location": "Central Park"},
+        # Replace mock_events with real event storage in production!
+        self.events = {
+            1: {"name": "Community Cleanup", "date": date(2025, 8, 10), "time": time(10, 0), "location": "Riverside Community Park"},
             2: {"name": "Food Drive", "date": date(2025, 12, 26), "time": time(10, 0), "location": "Community Center"}
         }
+
+    async def get_event_by_id(self, event_id: int):
+        # Replace this with your real event fetching logic (e.g., from DB)
+        event = self.events.get(event_id)
+        if not event:
+            raise ValidationError(f"Event {event_id} not found.")
+        return event
 
     async def participate(self, user_id: str, event_id: int) -> VolunteerHistory:
         # Prevent duplicate participation
@@ -22,13 +29,8 @@ class HistoryService:
             if h.event_id == event_id:
                 raise ValidationError("Already participating in this event.")
         
-        # Get event details
-        event_data = self.mock_events.get(event_id, {
-            "name": f"Event {event_id}",
-            "date": date(2025, 12, 25),
-            "time": time(14, 0),
-            "location": "Unknown Location"
-        })
+        # Fetch real event details
+        event_data = await self.get_event_by_id(event_id)
         
         history = VolunteerHistory(
             id=self.next_id,
@@ -44,6 +46,7 @@ class HistoryService:
         user_histories.append(history)
         self.next_id += 1
         return history
+
 
     async def update_status(self, user_id: str, event_id: int, status: ParticipationStatus) -> VolunteerHistory:
         user_histories = self.histories.get(user_id, [])

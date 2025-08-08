@@ -1,6 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
-from app.models.history import VolunteerHistory, VolunteerStats, ParticipationStatus
+from app.models.history import VolunteerHistory, VolunteerStats, ParticipationStatus, ParticipateRequest
 from app.services.history_service import HistoryService
 from app.api.auth import get_current_user
 from app.models.user import User
@@ -30,12 +30,12 @@ async def get_stats(
 @router.post("/participate/{event_id}", response_model=VolunteerHistory)
 async def participate(
     event_id: int,
-    skills: Optional[List[str]] = None,
+    request: ParticipateRequest,
     current_user: User = Depends(get_current_user),
     history_service: HistoryService = Depends(get_history_service)
 ):
     try:
-        return await history_service.participate(current_user.id, event_id, skills)
+        return await history_service.participate(current_user.id, event_id)
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

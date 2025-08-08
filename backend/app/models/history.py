@@ -51,4 +51,7 @@ class EventParticipation(BaseModel):
     confirmed_volunteers: int
     completed_volunteers: int
     cancelled_volunteers: int
-    no_show_volunteers: int 
+    no_show_volunteers: int
+
+class ParticipateRequest(BaseModel):
+    skills: Optional[list[str]] = None 

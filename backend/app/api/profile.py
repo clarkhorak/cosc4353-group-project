@@ -17,8 +17,14 @@ async def create_profile(
 ):
     """Create a new user profile"""
     try:
-        # Convert string ID to int for the service
         user_id = int(current_user.id)
+        # Prevent duplicate profiles for the same user
+        try:
+            existing_profile = await profile_service.get_profile(user_id)
+            if existing_profile:
+                raise HTTPException(status_code=400, detail="Profile already exists for this user")
+        except ProfileNotFoundError:
+            pass  # No profile exists, safe to create
         profile = await profile_service.create_profile(user_id, profile_data)
         return profile
     except ValidationError as e:
@@ -112,4 +118,4 @@ async def search_profiles_by_location(
 ):
     """Search profiles by location"""
     profiles = await profile_service.search_profiles_by_location(city, state)
-    return profiles 
+    return profiles
