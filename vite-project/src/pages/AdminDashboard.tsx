@@ -29,6 +29,29 @@ type User = {
 const skillsList = ['First Aid', 'Teaching', 'Cooking', 'Driving', 'Organizing'];
 const urgencies = ['Low', 'Medium', 'High'];
 
+function generateTimeOptions(stepMinutes: number = 30): string[] {
+  const options: string[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += stepMinutes) {
+      const hh = String(h).padStart(2, '0');
+      const mm = String(m).padStart(2, '0');
+      options.push(`${hh}:${mm}`);
+    }
+  }
+  return options;
+}
+
+function formatTimeLabel(hhmm: string): string {
+  if (!hhmm || !hhmm.includes(':')) return hhmm || '';
+  const [hour, minute] = hhmm.split(':');
+  const hourNum = parseInt(hour, 10);
+  const ampm = hourNum >= 12 ? 'PM' : 'AM';
+  const formattedHour = hourNum % 12 === 0 ? 12 : hourNum % 12;
+  return `${formattedHour}:${minute} ${ampm}`;
+}
+
+const TIME_OPTIONS = generateTimeOptions(30);
+
 const AdminDashboard: React.FC = () => {
   const { isAdmin, isAuthenticated, user: currentUser } = useAuth();
   const navigate = useNavigate();
@@ -117,6 +140,10 @@ const AdminDashboard: React.FC = () => {
       alert('Please fill in all required fields.');
       return;
     }
+    if (form.start_time >= form.end_time) {
+      alert('End time must be after start time.');
+      return;
+    }
     try {
       await apiService.createEvent(form);
       alert('Event created successfully!');
@@ -173,6 +200,20 @@ const AdminDashboard: React.FC = () => {
       fetchData();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to delete user');
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: number, title: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete the event "${title}" (ID: ${eventId})?\n\nThis action cannot be undone.`
+    );
+    if (!confirmed) return;
+    try {
+      await apiService.deleteEvent(eventId);
+      alert('Event deleted successfully!');
+      fetchData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete event');
     }
   };
 
@@ -352,25 +393,41 @@ const AdminDashboard: React.FC = () => {
               </div>
               <div>
                 <label className="block text-gray-700 text-sm font-bold mb-2">Start Time</label>
-                <input
-                  type="time"
+                <select
                   name="start_time"
                   value={form.start_time}
                   onChange={handleChange}
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                   required
-                />
+                >
+                  <option value="" disabled>
+                    Select start time
+                  </option>
+                  {TIME_OPTIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {formatTimeLabel(t)}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-gray-700 text-sm font-bold mb-2">End Time</label>
-                <input
-                  type="time"
+                <select
                   name="end_time"
                   value={form.end_time}
                   onChange={handleChange}
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                   required
-                />
+                >
+                  <option value="" disabled>
+                    Select end time
+                  </option>
+                  {TIME_OPTIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {formatTimeLabel(t)}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="flex items-center justify-end mt-6">
@@ -447,6 +504,15 @@ const AdminDashboard: React.FC = () => {
                           className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded"
                         >
                           Assign
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!event.id) return;
+                            await handleDeleteEvent(event.id, event.title);
+                          }}
+                          className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded"
+                        >
+                          Delete
                         </button>
                       </div>
                     </div>

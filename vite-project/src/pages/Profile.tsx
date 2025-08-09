@@ -12,6 +12,29 @@ const states = [
 
 const skillsList = ['First Aid', 'Teaching', 'Cooking', 'Driving', 'Organizing', 'Event Planning', 'Fundraising', 'Mentoring', 'Technical Support', 'Translation'];
 
+function generateTimeOptions(stepMinutes: number = 30): string[] {
+  const options: string[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += stepMinutes) {
+      const hh = String(h).padStart(2, '0');
+      const mm = String(m).padStart(2, '0');
+      options.push(`${hh}:${mm}`);
+    }
+  }
+  return options;
+}
+
+function formatTimeLabel(hhmm: string): string {
+  if (!hhmm || !hhmm.includes(':')) return hhmm || '';
+  const [hour, minute] = hhmm.split(':');
+  const hourNum = parseInt(hour, 10);
+  const ampm = hourNum >= 12 ? 'PM' : 'AM';
+  const formattedHour = hourNum % 12 === 0 ? 12 : hourNum % 12;
+  return `${formattedHour}:${minute} ${ampm}`;
+}
+
+const TIME_OPTIONS = generateTimeOptions(30);
+
 type Availability = {
   date: string;
   time: string; 
@@ -268,13 +291,19 @@ const Profile: React.FC = () => {
                   onChange={handleChange}
                   className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
-                <input
-                  type="time"
+                <select
                   name="newTime"
                   value={form.newTime}
                   onChange={handleChange}
                   className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+                >
+                  <option value="">Select time</option>
+                  {TIME_OPTIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {formatTimeLabel(t)}
+                    </option>
+                  ))}
+                </select>
                 <button
                   type="button"
                   onClick={addAvailability}
@@ -288,7 +317,7 @@ const Profile: React.FC = () => {
                 <ul className="space-y-2">
                   {form.availability.map((a, idx) => (
                     <li key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-                      <span>{a.date} at {a.time}</span>
+                      <span>{a.date} at {formatTimeLabel(a.time)}</span>
                       <button
                         type="button"
                         onClick={() => removeAvailability(a.date, a.time)}
