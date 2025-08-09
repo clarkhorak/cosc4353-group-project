@@ -10,6 +10,8 @@ from app.api.event import router as event_router
 from app.api.matching import router as matching_router
 from app.api.notification import router as notification_router
 from app.api.history import router as history_router
+from app.api.report import router as report_router
+from app.api.report import router as report_router
 
 # Import database
 from app.database import create_tables
@@ -30,7 +32,11 @@ app = FastAPI(
 # Configure CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Frontend URLs
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+    ],  # Frontend URLs
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,6 +49,8 @@ app.include_router(event_router)
 app.include_router(matching_router)
 app.include_router(notification_router)
 app.include_router(history_router)
+app.include_router(report_router)
+app.include_router(report_router)
 
 @app.on_event("startup")
 async def startup_event():

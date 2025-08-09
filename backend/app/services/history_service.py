@@ -163,21 +163,18 @@ class HistoryService:
             raise
     
     def get_stats(self, user_id: str) -> Dict[str, Any]:
-        """Get volunteer statistics for a user (alias for get_user_stats)"""
+        """Get volunteer statistics for a user based on DB history records."""
         try:
-            # Get user's participation history
-            participations = self.get_user_history(user_id)
-            
-            # Calculate stats based on participation status
-            total_events = len(participations)
-            completed_events = len([p for p in participations if p.status == "completed"])
-            pending_events = len([p for p in participations if p.status == "pending"])
-            cancelled_events = len([p for p in participations if p.status == "cancelled"])
-            no_show_events = len([p for p in participations if p.status == "no_show"])
-            
-            # Calculate completion rate
-            completion_rate = (completed_events / total_events * 100) if total_events > 0 else 0.0
-            
+            db_histories = self.history_repo.get_by_user_id(user_id)
+
+            total_events = len(db_histories)
+            completed_events = len([h for h in db_histories if (h.status or "").lower() == "completed"])
+            pending_events = len([h for h in db_histories if (h.status or "").lower() == "pending"])
+            cancelled_events = len([h for h in db_histories if (h.status or "").lower() == "cancelled"])
+            no_show_events = len([h for h in db_histories if (h.status or "").lower() == "no_show"])
+
+            completion_rate = (completed_events / total_events * 100.0) if total_events > 0 else 0.0
+
             return {
                 "volunteer_id": user_id,
                 "total_events": total_events,
@@ -185,11 +182,10 @@ class HistoryService:
                 "pending_events": pending_events,
                 "cancelled_events": cancelled_events,
                 "no_show_events": no_show_events,
-                "completion_rate": completion_rate
+                "completion_rate": completion_rate,
             }
         except Exception as e:
             logger.error(f"Error getting stats: {e}")
-            # Return default stats if there's an error
             return {
                 "volunteer_id": user_id,
                 "total_events": 0,
@@ -197,5 +193,5 @@ class HistoryService:
                 "pending_events": 0,
                 "cancelled_events": 0,
                 "no_show_events": 0,
-                "completion_rate": 0.0
-            } 
+                "completion_rate": 0.0,
+            }

@@ -149,6 +149,17 @@ export interface NotificationCreate {
   event_id?: string;
 }
 
+export interface MatchResult {
+  volunteer_id: string;
+  volunteer_email?: string | null;
+  volunteer_name?: string | null;
+  score: number;
+  matched_skills: string[];
+  missing_skills: string[];
+  available_on_date: boolean;
+  city_match: boolean;
+}
+
 class ApiService {
   private getAuthHeaders(): HeadersInit {
     const token = localStorage.getItem('access_token');
@@ -340,7 +351,7 @@ class ApiService {
 
   // History endpoints
   async getHistory(): Promise<VolunteerHistory[]> {
-    const response = await fetch(`${API_BASE_URL}/history/`, {
+    const response = await fetch(`${API_BASE_URL}/history/me`, {
       headers: this.getAuthHeaders(),
     });
     return this.handleResponse<VolunteerHistory[]>(response);
@@ -357,16 +368,19 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/history/participate/${eventId}`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
-      body: JSON.stringify({ skills }),
+      // Backend expects the request body to be a JSON array (List[str])
+      body: JSON.stringify(skills ?? []),
     });
     return this.handleResponse<VolunteerHistory>(response);
   }
 
   async updateParticipationStatus(eventId: number, status: string, rating?: number): Promise<VolunteerHistory> {
-    const response = await fetch(`${API_BASE_URL}/history/${eventId}/status`, {
+    const params = new URLSearchParams({ status });
+    if (rating !== undefined) params.append('rating', String(rating));
+    const response = await fetch(`${API_BASE_URL}/history/${eventId}/status?${params.toString()}`, {
       method: 'PUT',
       headers: this.getAuthHeaders(),
-      body: JSON.stringify({ status, rating }),
+      // Backend expects simple parameters, not a JSON body
     });
     return this.handleResponse<VolunteerHistory>(response);
   }
@@ -437,6 +451,56 @@ class ApiService {
   async deleteUser(email: string): Promise<{ message: string }> {
     const response = await fetch(`${API_BASE_URL}/auth/admin/users/${email}`, {
       method: 'DELETE',
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse<{ message: string }>(response);
+  }
+
+  // Report endpoints (Admin)
+  async downloadVolunteerHistoryReport(format: 'csv' | 'json' | 'pdf' = 'csv'): Promise<Blob | any> {
+    const response = await fetch(`${API_BASE_URL}/reports/volunteer-history?format=${format}`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (format === 'json') {
+      return this.handleResponse<any>(response);
+    }
+    if (!response.ok) throw new Error(`Failed to download report (${response.status})`);
+    return response.blob();
+  }
+
+  async downloadEventAssignmentsReport(format: 'csv' | 'json' | 'pdf' = 'csv'): Promise<Blob | any> {
+    const response = await fetch(`${API_BASE_URL}/reports/event-assignments?format=${format}`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (format === 'json') {
+      return this.handleResponse<any>(response);
+    }
+    if (!response.ok) throw new Error(`Failed to download report (${response.status})`);
+    return response.blob();
+  }
+
+  // Matching endpoints (Admin)
+  async autoMatch(eventId: number): Promise<MatchResult[]> {
+    const response = await fetch(`${API_BASE_URL}/matching/auto-match/${eventId}`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+    });
+    const { matches } = await this.handleResponse<{ message: string; matches: MatchResult[] }>(response);
+    return matches;
+  }
+
+  async assignVolunteer(volunteerIdOrEmailOrName: string, eventId: number): Promise<{ message: string }> {
+    // Heuristic: if contains '@', treat as email; if UUID-like or long, treat as id; else treat as name
+    const params = new URLSearchParams({ event_id: String(eventId) });
+    if (volunteerIdOrEmailOrName.includes('@')) {
+      params.append('volunteer_email', volunteerIdOrEmailOrName);
+    } else if (volunteerIdOrEmailOrName.length > 20) {
+      params.append('volunteer_id', volunteerIdOrEmailOrName);
+    } else {
+      params.append('volunteer_name', volunteerIdOrEmailOrName);
+    }
+    const response = await fetch(`${API_BASE_URL}/matching/assign?${params.toString()}`, {
+      method: 'POST',
       headers: this.getAuthHeaders(),
     });
     return this.handleResponse<{ message: string }>(response);

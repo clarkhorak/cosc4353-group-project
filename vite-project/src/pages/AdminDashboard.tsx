@@ -212,6 +212,44 @@ const AdminDashboard: React.FC = () => {
           >
             User Management
           </button>
+          <button
+            onClick={async () => {
+              try {
+                const format = prompt('Enter report format (csv, json, pdf):', 'csv') || 'csv';
+                const which = prompt('Which report? (history or assignments):', 'history') || 'history';
+                if (which.toLowerCase().startsWith('h')) {
+                  const data = await apiService.downloadVolunteerHistoryReport(format as any);
+                  if (format === 'json') {
+                    alert(`Rows: ${Array.isArray(data) ? data.length : 0}`);
+                  } else {
+                    const url = URL.createObjectURL(data as Blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `volunteer_history.${format}`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }
+                } else {
+                  const data = await apiService.downloadEventAssignmentsReport(format as any);
+                  if (format === 'json') {
+                    alert(`Rows: ${Array.isArray(data) ? data.length : 0}`);
+                  } else {
+                    const url = URL.createObjectURL(data as Blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `event_assignments.${format}`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }
+                }
+              } catch (e: any) {
+                alert(e?.message || 'Failed to generate report');
+              }
+            }}
+            className={`py-2 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300`}
+          >
+            Generate Reports
+          </button>
         </nav>
       </div>
 
@@ -365,13 +403,52 @@ const AdminDashboard: React.FC = () => {
                         </p>
                         <p className="text-sm text-gray-500">{event.location}</p>
                       </div>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        event.status === 'open' ? 'bg-green-100 text-green-800' :
-                        event.status === 'closed' ? 'bg-red-100 text-red-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {event.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          event.status === 'open' ? 'bg-green-100 text-green-800' :
+                          event.status === 'closed' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {event.status}
+                        </span>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const matches = await apiService.autoMatch(event.id!);
+                              if (!matches || matches.length === 0) {
+                                alert('No matching volunteers found.');
+                                return;
+                              }
+                              // Show top 5
+                              const top = matches.slice(0, 5);
+                              const list = top
+                                .map((m, i) => `${i + 1}. ${m.volunteer_name || m.volunteer_email || m.volunteer_id} (score ${m.score})`)
+                                .join('\n');
+                              alert(`Top matches for ${event.title}:\n\n${list}\n\nUse "Assign" to add a volunteer.`);
+                            } catch (e: any) {
+                              alert(e?.message || 'Failed to run auto-match');
+                            }
+                          }}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1 rounded"
+                        >
+                          Auto-match
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const volunteer = prompt('Enter volunteer email, ID, or full name to assign:');
+                            if (!volunteer) return;
+                            try {
+                              await apiService.assignVolunteer(volunteer, event.id!);
+                              alert('Volunteer assigned to event');
+                            } catch (e: any) {
+                              alert(e?.message || 'Failed to assign volunteer');
+                            }
+                          }}
+                          className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded"
+                        >
+                          Assign
+                        </button>
+                      </div>
                     </div>
                   </li>
                 ))}

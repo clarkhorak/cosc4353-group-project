@@ -68,10 +68,16 @@ const Notifications: React.FC = () => {
     switch (type.toLowerCase()) {
       case 'event_assignment':
         return '📅';
+      case 'event_reminder':
       case 'reminder':
         return '⏰';
+      case 'status_update':
       case 'update':
         return '📢';
+      case 'new_event':
+        return '🆕';
+      case 'system_announcement':
+        return '📣';
       case 'cancellation':
         return '❌';
       default:
@@ -83,10 +89,16 @@ const Notifications: React.FC = () => {
     switch (type.toLowerCase()) {
       case 'event_assignment':
         return 'bg-blue-100 text-blue-800';
+      case 'event_reminder':
       case 'reminder':
         return 'bg-yellow-100 text-yellow-800';
+      case 'status_update':
       case 'update':
         return 'bg-green-100 text-green-800';
+      case 'new_event':
+        return 'bg-indigo-100 text-indigo-800';
+      case 'system_announcement':
+        return 'bg-purple-100 text-purple-800';
       case 'cancellation':
         return 'bg-red-100 text-red-800';
       default:

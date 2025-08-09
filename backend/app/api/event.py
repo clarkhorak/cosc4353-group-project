@@ -6,6 +6,8 @@ from app.services.event_service import EventService
 from app.api.auth import get_current_user
 from app.utils.exceptions import ValidationError
 from app.utils.rbac import admin_required
+from app.api.notification import get_notification_service
+from app.models.notification import NotificationCreate, NotificationType
 
 router = APIRouter(prefix="/events", tags=["events"])
 
@@ -19,7 +21,9 @@ async def create_event(
 ):
     """Create a new event (admin only)"""
     try:
-        return event_service.create_event(event_data, user_id=current_user.id)
+        created = event_service.create_event(event_data, user_id=current_user.id)
+        # Notify admins (or system) about new event - simple broadcast not implemented; skip for MVP
+        return created
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -65,7 +69,9 @@ async def update_event(
 ):
     """Update an event (admin only)"""
     try:
-        return event_service.update_event(event_id, event_data)
+        updated = event_service.update_event(event_id, event_data)
+        # For MVP: no fanout; in a real system, notify enrolled volunteers
+        return updated
     except ValidationError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

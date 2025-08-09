@@ -30,7 +30,7 @@ const AvailableEvents: React.FC = () => {
         setEvents(data);
         // Fetch joined events from backend
         const history = await apiService.getHistory();
-        setJoinedEventIds(history.map((h: any) => h.event_id));
+        setJoinedEventIds(history.map((h: any) => Number(h.event_id)).filter((id: number) => !Number.isNaN(id)));
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load events');
       } finally {

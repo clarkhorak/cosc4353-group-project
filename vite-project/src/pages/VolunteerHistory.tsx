@@ -143,7 +143,7 @@ const VolunteerHistoryPage: React.FC = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-500">Completion Rate</p>
-                      <p className="text-2xl font-semibold text-gray-900">{(stats.completion_rate * 100).toFixed(0)}%</p>
+                      <p className="text-2xl font-semibold text-gray-900">{stats.completion_rate.toFixed(0)}%</p>
                     </div>
                   </div>
                 </div>

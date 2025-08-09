@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from app.models.matching import EventSignup
 from app.models.user import User
@@ -6,6 +6,10 @@ from app.services.matching_service import MatchingService
 from app.utils.exceptions import ValidationError
 from app.api.auth import get_current_user
 from app.utils.rbac import admin_required
+from app.repositories.event_repository import EventRepository
+from app.repositories.history_repository import HistoryRepository
+from app.api.notification import get_notification_service
+from app.models.notification import NotificationCreate, NotificationType
 
 router = APIRouter(prefix="/matching", tags=["matching"])
 
@@ -82,3 +86,80 @@ async def auto_match_volunteers(
         return {"message": f"Auto-matched {len(matches)} volunteers to event", "matches": matches}
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=str(e)) 
+
+
+@router.post("/assign")
+@admin_required
+async def assign_volunteer_to_event(
+    event_id: int,
+    volunteer_id: Optional[str] = None,
+    volunteer_email: Optional[str] = None,
+    volunteer_name: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+):
+    """Assign a volunteer to an event (persisted in history). Admin only."""
+    event_repo = EventRepository()
+    history_repo = HistoryRepository()
+
+    # Resolve hashed event_id to DB event
+    db_event = None
+    for e in event_repo.get_all():
+        try:
+            if hash(e.id) % 1000000 == event_id:
+                db_event = e
+                break
+        except Exception:
+            continue
+    if not db_event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    # Determine volunteer user_id by id/email/name (prefer id, then email, then name)
+    user_id = volunteer_id
+    from app.repositories.user_repository import UserRepository
+    user_repo = UserRepository()
+    if not user_id and volunteer_email:
+        user = user_repo.get_by_email(volunteer_email)
+        if not user:
+            raise HTTPException(status_code=404, detail="Volunteer with email not found")
+        user_id = user.id
+    if not user_id and volunteer_name:
+        # naive lookup by name among active users
+        for u in user_repo.get_active_users():
+            if u.full_name.lower() == volunteer_name.lower():
+                user_id = u.id
+                break
+        if not user_id:
+            raise HTTPException(status_code=404, detail="Volunteer with name not found")
+
+    # Prevent duplicate assignment
+    existing = history_repo.get_by_user_and_event(user_id, db_event.id)
+    if existing:
+        return {"message": "Volunteer already assigned to this event"}
+
+    # Create participation as confirmed
+    participation = history_repo.create_participation(
+        user_id=user_id,
+        event_id=db_event.id,
+        participation_date=db_event.event_date,
+        hours_volunteered=0,
+        status="completed",
+    )
+
+    # Send notification to volunteer about assignment
+    notification_service = get_notification_service()
+    await notification_service.create_notification(
+        NotificationCreate(
+            user_id=user_id,
+            type=NotificationType.EVENT_ASSIGNMENT,
+            title="Event assignment",
+            message=f"You have been assigned to event '{db_event.title}' on {db_event.event_date}.",
+            event_id=db_event.id,
+        )
+    )
+
+    return {
+        "message": "Volunteer assigned",
+        "volunteer_id": user_id,
+        "event_id": event_id,
+        "participation_id": participation.id,
+    }
